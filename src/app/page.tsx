@@ -388,7 +388,7 @@ export default function App() {
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
       const scrollHeight = textareaRef.current.scrollHeight;
-      const minHeight = 80; // min-h-[80px] equivalent
+      const minHeight = 52; // min-h-[52px] equivalent
       const maxHeight = 200; // max-h-[200px] equivalent
       textareaRef.current.style.height = `${Math.max(minHeight, Math.min(scrollHeight, maxHeight))}px`;
       textareaRef.current.style.overflowY =
@@ -1054,31 +1054,31 @@ export default function App() {
         </section>
       </main>
 
-      <div className="fixed bottom-0 left-0 right-0 z-40 pb-6 px-4">
+      <div className="fixed bottom-0 left-0 right-0 z-40 pb-4 px-4">
         <div className="max-w-3xl mx-auto">
-          <div className="relative group bg-slate-900/80 backdrop-blur-xl rounded-2xl border border-slate-700/50 focus-within:border-slate-600/60 shadow-xl transition-all duration-200">
+          <div className="relative group bg-slate-900/95 backdrop-blur-xl rounded-3xl border border-slate-800/80 focus-within:border-slate-700/90 shadow-2xl shadow-black/20 transition-all duration-300">
             {/* Attachments Section */}
             {imagePreviews.length > 0 && (
-              <div className="px-4 pt-4 pb-3 border-b border-slate-700/40">
-                <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+              <div className="px-5 pt-4 pb-3 border-b border-slate-800/60">
+                <div className="flex gap-2.5 overflow-x-auto scrollbar-hide pb-1">
                   {imagePreviews.map((preview, idx) => {
                     const fileName =
                       preview.file.name || `image-${idx + 1}.png`;
                     return (
                       <div
                         key={idx}
-                        className="flex-shrink-0 flex items-center gap-2 bg-slate-800/60 border border-slate-700/50 rounded-lg px-3 py-2 min-w-[140px]"
+                        className="flex-shrink-0 flex items-center gap-2.5 bg-slate-800/70 border border-slate-700/60 rounded-xl px-3.5 py-2.5 min-w-[150px] hover:bg-slate-800/90 transition-colors"
                       >
-                        <Square
-                          size={14}
-                          className="text-slate-400 flex-shrink-0"
-                        />
-                        <span className="text-slate-300 text-xs font-medium truncate flex-1">
+                        <div className="flex-shrink-0 w-8 h-8 rounded-md bg-slate-700/50 flex items-center justify-center">
+                          <ImageIcon size={14} className="text-slate-400" />
+                        </div>
+                        <span className="text-slate-200 text-xs font-medium truncate flex-1">
                           {fileName}
                         </span>
                         <button
                           onClick={() => removeImagePreview(idx)}
-                          className="text-slate-400 hover:text-slate-200 transition-colors flex-shrink-0"
+                          className="text-slate-400 hover:text-slate-100 transition-colors flex-shrink-0 p-1 rounded-md hover:bg-slate-700/50"
+                          title="Remove image"
                         >
                           <X size={14} />
                         </button>
@@ -1090,22 +1090,22 @@ export default function App() {
             )}
 
             {/* Content Input Section */}
-            <div className="p-4">
+            <div className="p-5">
               <div className="flex items-end gap-3">
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 relative">
                   <textarea
                     ref={textareaRef}
                     value={inputContent}
                     onChange={(e) => setInputContent(e.target.value)}
                     onKeyDown={handleKeyDown}
                     onPaste={handlePaste}
-                    placeholder="Write the Entery content"
-                    className="w-full bg-transparent text-slate-100 placeholder-slate-500 text-sm leading-relaxed outline-none resize-none min-h-[80px]"
+                    placeholder="Write your entry content..."
+                    className="w-full bg-transparent text-slate-100 placeholder-slate-500/70 text-[15px] leading-[1.6] outline-none resize-none min-h-[52px] max-h-[200px] py-3.5 pr-2"
                     rows={1}
                   />
                 </div>
 
-                <div className="flex items-end gap-2 flex-shrink-0 pb-1">
+                <div className="flex items-center gap-2 flex-shrink-0">
                   {/* Time Input */}
                   <TimePicker
                     value={entryTime}
@@ -1124,10 +1124,10 @@ export default function App() {
                   />
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="p-2.5 rounded-lg bg-slate-800/60 border border-slate-700/50 text-slate-300 hover:text-slate-100 hover:bg-slate-800/80 hover:border-slate-600/50 transition-all duration-200 flex items-center justify-center"
+                    className="p-2.5 rounded-xl bg-slate-800/70 border border-slate-700/60 text-slate-300 hover:text-slate-100 hover:bg-slate-800/90 hover:border-slate-600/70 transition-all duration-200 flex items-center justify-center active:scale-95"
                     title="Upload images"
                   >
-                    <ImageIcon size={18} />
+                    <ImageIcon size={19} />
                   </button>
 
                   {/* Send Button */}
@@ -1137,12 +1137,13 @@ export default function App() {
                       (!inputContent.trim() && imagePreviews.length === 0) ||
                       isUploading
                     }
-                    className="p-2.5 rounded-lg bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center disabled:hover:bg-blue-600"
+                    className="p-2.5 rounded-xl bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center shadow-lg shadow-blue-600/20 hover:shadow-blue-500/30 disabled:shadow-none active:scale-95 disabled:active:scale-100"
+                    title="Send message"
                   >
                     {isUploading ? (
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                     ) : (
-                      <Send size={18} />
+                      <Send size={19} />
                     )}
                   </button>
                 </div>
