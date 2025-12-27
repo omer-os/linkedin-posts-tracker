@@ -21,6 +21,7 @@ import {
   Edit,
   Check,
 } from "lucide-react";
+import { TimePicker } from "../components/time-picker";
 
 const formatDate = (date: Date): string => {
   // Format date in local timezone to avoid day shift issues
@@ -822,13 +823,9 @@ export default function App() {
                                   <Clock size={12} />
                                   Time:
                                 </label>
-                                <input
-                                  type="time"
+                                <TimePicker
                                   value={editingTime}
-                                  onChange={(e) =>
-                                    setEditingTime(e.target.value)
-                                  }
-                                  className="bg-slate-800/60 border border-slate-700/50 rounded-lg px-3 py-1.5 text-slate-200 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500/50 cursor-pointer hover:bg-slate-800/80 transition-colors"
+                                  onChange={setEditingTime}
                                   onClick={(e) => e.stopPropagation()}
                                   title="Edit entry time"
                                 />
@@ -1110,15 +1107,11 @@ export default function App() {
 
                 <div className="flex items-end gap-2 flex-shrink-0 pb-1">
                   {/* Time Input */}
-                  <div className="flex flex-col items-end gap-1">
-                    <input
-                      type="time"
-                      value={entryTime}
-                      onChange={(e) => setEntryTime(e.target.value)}
-                      className="bg-slate-800/60 h-10 border border-slate-700/50 rounded-lg px-3 py-1.5 text-slate-200 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500/50 cursor-pointer hover:bg-slate-800/80 transition-colors"
-                      title="Time when the post was published on LinkedIn"
-                    />
-                  </div>
+                  <TimePicker
+                    value={entryTime}
+                    onChange={setEntryTime}
+                    title="Time when the post was published on LinkedIn"
+                  />
 
                   {/* Image Upload Button */}
                   <input
