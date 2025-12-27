@@ -32,7 +32,7 @@ interface EntriesListProps {
   onReturnToToday: () => void;
   onCopyAllPosts: () => void;
   userId: string | undefined;
-  scrollRef: React.RefObject<HTMLDivElement>;
+  scrollRef: React.RefObject<HTMLDivElement | null>;
 }
 
 export function EntriesList({

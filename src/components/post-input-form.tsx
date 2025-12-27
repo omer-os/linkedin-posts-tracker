@@ -56,13 +56,8 @@ export function PostInputForm({
   };
 
   return (
-    <div
-      className={`fixed bottom-0 z-40 pb-4 px-4 ${
-        isAuthenticated && userId ? "left-80 right-0" : "left-0 right-0"
-      }`}
-    >
-      <div className="max-w-3xl mx-auto">
-        <div className="relative group bg-slate-900/95 backdrop-blur-xl rounded-3xl border border-slate-800/80 focus-within:border-slate-700/90 shadow-2xl shadow-black/20 transition-all duration-300">
+    <div className="w-full">
+      <div className="relative group bg-slate-900/95 backdrop-blur-xl rounded-3xl border border-slate-800/80 focus-within:border-slate-700/90 shadow-2xl shadow-black/20 transition-all duration-300">
           {/* Attachments Section */}
           {imagePreviews.length > 0 && (
             <div className="px-5 pt-4 pb-3 border-b border-slate-800/60">
@@ -98,7 +93,7 @@ export function PostInputForm({
           {/* Content Input Section */}
           <div className="p-5">
             <div className="flex items-end gap-3">
-              <div className="flex-1 min-w-0 relative">
+              <div className="flex-1 pb-10 min-w-0 relative">
                 <textarea
                   ref={textareaRef}
                   value={inputContent}
@@ -106,12 +101,12 @@ export function PostInputForm({
                   onKeyDown={handleKeyDown}
                   onPaste={onPaste}
                   placeholder="Write your entry content..."
-                  className="w-full bg-transparent text-slate-100 placeholder-slate-500/70 text-[15px] leading-[1.6] outline-none resize-none min-h-[52px] max-h-[200px] py-3.5 pr-2"
+                  className="w-full bg-transparent text-slate-100 placeholder-slate-500/70 text-[15px] leading-[1.6] outline-none resize-none min-h-[52px] max-h-[200px]"
                   rows={1}
                 />
               </div>
 
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex absolute bottom-4 right-4 items-center gap-2 shrink-0">
                 {/* Time Input */}
                 <TimePicker
                   value={entryTime}
@@ -157,7 +152,6 @@ export function PostInputForm({
           </div>
         </div>
       </div>
-    </div>
   );
 }
 

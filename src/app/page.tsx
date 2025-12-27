@@ -49,8 +49,8 @@ export default function App() {
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editingContent, setEditingContent] = useState<string>("");
   const [editingTime, setEditingTime] = useState<string>("");
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const todayButtonRef = useRef<HTMLButtonElement>(null);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const todayButtonRef = useRef<HTMLButtonElement | null>(null);
 
   // Compute entryImageIds for the selected date
   const currentPostData = posts?.[selectedDate.date];
@@ -65,11 +65,12 @@ export default function App() {
     !clerkLoaded ||
     (clerkUser && convexUser === undefined) ||
     (convexUser && posts === undefined);
-  const isAuthenticated =
+  const isAuthenticated = Boolean(
     isSignedIn &&
     clerkUser !== null &&
     clerkUser !== undefined &&
-    convexUser !== null;
+    convexUser !== null
+  );
 
   const calendarData = useMemo(() => {
     const days: DayData[] = [];
@@ -351,7 +352,11 @@ export default function App() {
     navigator.clipboard.writeText(allPosts);
   };
 
-  const handleEditStart = (index: number, content: string, time: string | null) => {
+  const handleEditStart = (
+    index: number,
+    content: string,
+    time: string | null
+  ) => {
     setEditingIndex(index);
     setEditingContent(content);
     setEditingTime(time || "");
@@ -440,7 +445,7 @@ export default function App() {
       <div className="min-h-screen bg-slate-950 flex items-center justify-center">
         <div className="text-center max-w-md px-4">
           <div className="bg-slate-900 p-8 rounded-2xl border border-slate-800">
-            <div className="bg-gradient-to-tr from-blue-600 to-blue-500 p-3 rounded-lg text-white shadow-[0_0_15px_rgba(37,99,235,0.4)] w-fit mx-auto mb-4">
+            <div className="bg-linear-to-tr from-blue-600 to-blue-500 p-3 rounded-lg text-white shadow-[0_0_15px_rgba(37,99,235,0.4)] w-fit mx-auto mb-4">
               <Linkedin size={24} />
             </div>
             <h2 className="text-xl font-bold text-slate-100 mb-2">
@@ -450,7 +455,7 @@ export default function App() {
               Sign in to start tracking your LinkedIn posts
             </p>
             <SignInButton mode="modal" fallbackRedirectUrl="/">
-              <button className="px-6 py-3 bg-gradient-to-tr from-blue-600 to-blue-500 text-white rounded-lg hover:shadow-lg hover:shadow-blue-500/25 transition-all duration-300 font-medium">
+              <button className="px-6 py-3 bg-linear-to-tr from-blue-600 to-blue-500 text-white rounded-lg hover:shadow-lg hover:shadow-blue-500/25 transition-all duration-300 font-medium">
                 Sign In
               </button>
             </SignInButton>
@@ -461,16 +466,18 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-200 font-sans selection:bg-blue-500/30 pb-40 flex">
-      {isAuthenticated && userId && <DraftsSidebar userId={userId} />}
+    <div className="h-dvh max-h-dvh bg-slate-950 text-slate-200 font-sans selection:bg-blue-500/30 flex overflow-hidden">
+      {isSignedIn && (userId || clerkUser?.id) && (
+        <DraftsSidebar userId={userId || clerkUser?.id || ""} />
+      )}
 
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 relative">
         <AppHeader
           totalPosts={stats.totalPosts}
           currentStreak={stats.currentStreak}
         />
 
-        <main className="max-w-3xl mx-auto px-4 py-8 space-y-8 flex-1">
+        <main className="w-max overflow-x-hidden mx-auto px-4 py-8 space-y-8 flex-1 overflow-y-auto">
           <ActivityGraph
             weeks={weeks}
             currentYear={currentYear}
@@ -479,6 +486,21 @@ export default function App() {
             onYearChange={setCurrentYear}
             onDayClick={handleDayClick}
             todayButtonRef={todayButtonRef}
+          />
+
+          <PostInputForm
+            inputContent={inputContent}
+            entryTime={entryTime}
+            imagePreviews={imagePreviews}
+            isUploading={isUploading}
+            isAuthenticated={isAuthenticated}
+            userId={userId}
+            onContentChange={setInputContent}
+            onTimeChange={setEntryTime}
+            onFileSelect={handleFileSelect}
+            onPaste={handlePaste}
+            onRemoveImage={removeImagePreview}
+            onSubmit={handleSubmit}
           />
 
           <EntriesList
@@ -510,21 +532,6 @@ export default function App() {
             scrollRef={scrollRef}
           />
         </main>
-
-        <PostInputForm
-          inputContent={inputContent}
-          entryTime={entryTime}
-          imagePreviews={imagePreviews}
-          isUploading={isUploading}
-          isAuthenticated={isAuthenticated}
-          userId={userId}
-          onContentChange={setInputContent}
-          onTimeChange={setEntryTime}
-          onFileSelect={handleFileSelect}
-          onPaste={handlePaste}
-          onRemoveImage={removeImagePreview}
-          onSubmit={handleSubmit}
-        />
       </div>
 
       <div className="fixed inset-0 pointer-events-none z-0">

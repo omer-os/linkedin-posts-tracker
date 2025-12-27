@@ -12,7 +12,7 @@ interface ActivityGraphProps {
   selectedDate: { date: string; obj: Date };
   onYearChange: (year: number) => void;
   onDayClick: (day: DayData) => void;
-  todayButtonRef: React.RefObject<HTMLButtonElement>;
+  todayButtonRef: React.RefObject<HTMLButtonElement | null>;
 }
 
 export function ActivityGraph({
