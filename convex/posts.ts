@@ -137,3 +137,46 @@ export const deleteEntries = mutation({
   },
 });
 
+export const editEntry = mutation({
+  args: {
+    userId: v.string(),
+    date: v.string(),
+    entryIndex: v.number(),
+    newContent: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("posts")
+      .withIndex("by_user_date", (q) => 
+        q.eq("userId", args.userId).eq("date", args.date)
+      )
+      .first();
+
+    if (!existing) return;
+
+    // Split by double newline followed by timestamp pattern [HH:MM]
+    const entryPattern = /\n\n(?=\[\d{2}:\d{2}(?::\d{2})?\])/;
+    const entries = existing.content.split(entryPattern).filter((entry) => entry.trim().length > 0);
+    
+    if (args.entryIndex < 0 || args.entryIndex >= entries.length) return;
+
+    // Extract timestamp from the original entry
+    const originalEntry = entries[args.entryIndex];
+    const match = originalEntry.match(/^\[(.*?)\]\s(.*)/s);
+    const time = match ? match[1] : null;
+    
+    // Preserve timestamp, update content
+    const updatedEntry = time 
+      ? `[${time}] ${args.newContent.trim()}`
+      : args.newContent.trim();
+    
+    entries[args.entryIndex] = updatedEntry;
+    const newContent = entries.join("\n\n");
+
+    await ctx.db.patch(existing._id, {
+      content: newContent,
+      lastUpdated: Date.now(),
+    });
+  },
+});
+

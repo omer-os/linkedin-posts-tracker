@@ -18,10 +18,16 @@ import {
   Trash2,
   CheckSquare,
   Square,
+  Edit,
+  Check,
 } from "lucide-react";
 
 const formatDate = (date: Date): string => {
-  return date.toISOString().split("T")[0];
+  // Format date in local timezone to avoid day shift issues
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 };
 
 const getIntensityClass = (count: number): string => {
@@ -54,12 +60,14 @@ const getMonthName = (monthIndex: number): string => {
 };
 
 const formatDateForTooltip = (dateStr: string): string => {
-  const date = new Date(dateStr);
-  const month = getMonthName(date.getMonth());
-  const day = date.getDate();
-  const year = date.getFullYear();
+  // Parse YYYY-MM-DD in local timezone to avoid day shift issues
+  const [year, month, day] = dateStr.split("-").map(Number);
+  const date = new Date(year, month - 1, day);
+  const monthName = getMonthName(date.getMonth());
+  const dayNum = date.getDate();
+  const yearNum = date.getFullYear();
   const weekday = date.toLocaleDateString("en-US", { weekday: "short" });
-  return `${weekday}, ${month} ${day}, ${year}`;
+  return `${weekday}, ${monthName} ${dayNum}, ${yearNum}`;
 };
 
 const splitEntries = (content: string): string[] => {
@@ -89,6 +97,7 @@ export default function App() {
   const posts = useQuery(api.posts.getPosts, userId ? { userId } : "skip");
   const addPostMutation = useMutation(api.posts.addPost);
   const deleteEntriesMutation = useMutation(api.posts.deleteEntries);
+  const editEntryMutation = useMutation(api.posts.editEntry);
   const generateUploadUrl = useMutation(api.posts.generateUploadUrl);
 
   const [selectedDate, setSelectedDate] = useState<SelectedDate>(() => {
@@ -106,9 +115,13 @@ export default function App() {
     new Set()
   );
   const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editingContent, setEditingContent] = useState<string>("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const editTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const todayButtonRef = useRef<HTMLButtonElement>(null);
 
   // Compute entryImageIds for the selected date
   const currentPostData = posts?.[selectedDate.date];
@@ -206,9 +219,10 @@ export default function App() {
   const availableYears = useMemo(() => {
     const baseYears = [2024, 2025, 2026];
     if (!posts) return baseYears;
-    const dataYears = Object.keys(posts).map((dateStr) =>
-      new Date(dateStr).getFullYear()
-    );
+    const dataYears = Object.keys(posts).map((dateStr) => {
+      // Extract year directly from YYYY-MM-DD string to avoid timezone issues
+      return parseInt(dateStr.split("-")[0], 10);
+    });
     const allYears = new Set([...baseYears, ...dataYears]);
     return Array.from(allYears).sort((a, b) => b - a);
   }, [posts]);
@@ -356,6 +370,17 @@ export default function App() {
     }
   }, [inputContent]);
 
+  useEffect(() => {
+    if (editTextareaRef.current && editingIndex !== null) {
+      editTextareaRef.current.style.height = "auto";
+      const scrollHeight = editTextareaRef.current.scrollHeight;
+      const maxHeight = 400; // max height for edit textarea
+      editTextareaRef.current.style.height = `${Math.min(scrollHeight, maxHeight)}px`;
+      editTextareaRef.current.style.overflowY =
+        scrollHeight > maxHeight ? "auto" : "hidden";
+    }
+  }, [editingContent, editingIndex]);
+
   const toggleEntrySelection = (index: number) => {
     setSelectedEntries((prev) => {
       const newSet = new Set(prev);
@@ -406,7 +431,9 @@ export default function App() {
     const allPosts = Object.entries(posts)
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([date, post]) => {
-        const dateObj = new Date(date);
+        // Parse YYYY-MM-DD in local timezone to avoid day shift issues
+        const [year, month, day] = date.split("-").map(Number);
+        const dateObj = new Date(year, month - 1, day);
         const formattedDate = dateObj.toLocaleDateString("en-US", {
           weekday: "long",
           year: "numeric",
@@ -424,6 +451,22 @@ export default function App() {
       setSelectedEntries(new Set());
     }
   }, [isSelectionMode]);
+
+  // Scroll to today's date in calendar on initial load
+  useEffect(() => {
+    const scrollToToday = () => {
+      if (todayButtonRef.current) {
+        todayButtonRef.current.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+          inline: "center",
+        });
+      }
+    };
+    // Small delay to ensure calendar is rendered
+    const timeoutId = setTimeout(scrollToToday, 100);
+    return () => clearTimeout(timeoutId);
+  }, []);
 
   const isToday = selectedDate.date === formatDate(new Date());
   const entries = currentPostData ? splitEntries(currentPostData.content) : [];
@@ -561,12 +604,14 @@ export default function App() {
                           );
                         }
                         const isSelected = selectedDate.date === dayData.date;
+                        const isTodayDate = dayData.date === formatDate(new Date());
                         const formattedDate = formatDateForTooltip(
                           dayData.date
                         );
                         return (
                           <button
                             key={dayIndex}
+                            ref={isTodayDate ? todayButtonRef : null}
                             onClick={() => handleDayClick(dayData)}
                             className={`
                               relative group/tooltip w-[8px] h-[8px] sm:w-[10px] sm:h-[10px] rounded-[2px] transition-all duration-300
@@ -744,45 +789,117 @@ export default function App() {
                               {time}
                             </div>
                           )}
-                          <p className="text-slate-200 text-sm whitespace-pre-wrap leading-relaxed">
-                            {content}
-                          </p>
-                          {isLastEntry &&
-                            entryImageIds.length > 0 &&
-                            imageUrls && (
-                              <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
-                                {imageUrls.map((imageUrl, imgIdx) => {
-                                  if (!imageUrl) return null;
-                                  return (
-                                    <div
-                                      key={imgIdx}
-                                      className="relative group/img aspect-square rounded-lg overflow-hidden border border-slate-700 bg-slate-800"
-                                    >
-                                      <img
-                                        src={imageUrl}
-                                        alt={`Entry image ${imgIdx + 1}`}
-                                        className="w-full h-full object-cover"
-                                      />
-                                      <a
-                                        href={imageUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="absolute inset-0 bg-black/0 hover:bg-black/20 transition-colors flex items-center justify-center"
-                                        onClick={(e) => e.stopPropagation()}
-                                      >
-                                        <ImageIcon
-                                          size={20}
-                                          className="text-white opacity-0 group-hover/img:opacity-100 transition-opacity"
-                                        />
-                                      </a>
-                                    </div>
-                                  );
-                                })}
+                          {editingIndex === idx ? (
+                            <div className="space-y-2">
+                              <textarea
+                                ref={editTextareaRef}
+                                value={editingContent}
+                                onChange={(e) => setEditingContent(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Escape") {
+                                    setEditingIndex(null);
+                                    setEditingContent("");
+                                  }
+                                }}
+                                className="w-full bg-slate-800/50 border border-slate-700 rounded-lg p-3 text-slate-200 text-sm leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                                rows={Math.min(editingContent.split("\n").length + 2, 15)}
+                                onClick={(e) => e.stopPropagation()}
+                                autoFocus
+                              />
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    if (!userId || !editingContent.trim()) return;
+                                    try {
+                                      await editEntryMutation({
+                                        userId,
+                                        date: selectedDate.date,
+                                        entryIndex: idx,
+                                        newContent: editingContent.trim(),
+                                      });
+                                      setEditingIndex(null);
+                                      setEditingContent("");
+                                    } catch (error) {
+                                      console.error("Error editing entry:", error);
+                                    }
+                                  }}
+                                  className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs rounded-lg transition-colors flex items-center gap-1.5"
+                                  disabled={!editingContent.trim()}
+                                >
+                                  <Check size={14} />
+                                  Save
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setEditingIndex(null);
+                                    setEditingContent("");
+                                  }}
+                                  className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs rounded-lg transition-colors flex items-center gap-1.5"
+                                >
+                                  <X size={14} />
+                                  Cancel
+                                </button>
                               </div>
-                            )}
+                            </div>
+                          ) : (
+                            <>
+                              <p className="text-slate-200 text-sm whitespace-pre-wrap leading-relaxed">
+                                {content}
+                              </p>
+                              {isLastEntry &&
+                                entryImageIds.length > 0 &&
+                                imageUrls && (
+                                  <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                    {imageUrls.map((imageUrl, imgIdx) => {
+                                      if (!imageUrl) return null;
+                                      return (
+                                        <div
+                                          key={imgIdx}
+                                          className="relative group/img aspect-square rounded-lg overflow-hidden border border-slate-700 bg-slate-800"
+                                        >
+                                          <img
+                                            src={imageUrl}
+                                            alt={`Entry image ${imgIdx + 1}`}
+                                            className="w-full h-full object-cover"
+                                          />
+                                          <a
+                                            href={imageUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="absolute inset-0 bg-black/0 hover:bg-black/20 transition-colors flex items-center justify-center"
+                                            onClick={(e) => e.stopPropagation()}
+                                          >
+                                            <ImageIcon
+                                              size={20}
+                                              className="text-white opacity-0 group-hover/img:opacity-100 transition-opacity"
+                                            />
+                                          </a>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                            </>
+                          )}
                         </div>
-                        {!isSelectionMode && (
+                        {!isSelectionMode && editingIndex !== idx && (
                           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingIndex(idx);
+                                setEditingContent(content);
+                                setTimeout(() => {
+                                  editTextareaRef.current?.focus();
+                                }, 0);
+                              }}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors"
+                              title="Edit entry"
+                            >
+                              <Edit size={14} />
+                            </button>
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
