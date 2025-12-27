@@ -107,6 +107,12 @@ export default function App() {
   });
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [inputContent, setInputContent] = useState("");
+  const [entryTime, setEntryTime] = useState(() => {
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, "0");
+    const minutes = String(now.getMinutes()).padStart(2, "0");
+    return `${hours}:${minutes}`;
+  });
   const [imagePreviews, setImagePreviews] = useState<
     Array<{ file: File; preview: string; storageId?: string }>
   >([]);
@@ -117,6 +123,7 @@ export default function App() {
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editingContent, setEditingContent] = useState<string>("");
+  const [editingTime, setEditingTime] = useState<string>("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -245,10 +252,22 @@ export default function App() {
     const dateStr = selectedDate.date;
     const existingDoc = posts?.[dateStr];
     const newEntry = inputContent.trim();
-    const timeStamp = new Date().toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    // Convert 24-hour format (HH:MM) to 12-hour format with AM/PM
+    let timeStamp: string;
+    if (entryTime) {
+      const [hours, minutes] = entryTime.split(":").map(Number);
+      const date = new Date();
+      date.setHours(hours, minutes, 0, 0);
+      timeStamp = date.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } else {
+      timeStamp = new Date().toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    }
     const formattedEntry = `[${timeStamp}] ${newEntry || "(image entry)"}`;
     let finalContent = formattedEntry;
     let newCount = 1;
@@ -296,6 +315,11 @@ export default function App() {
       });
       setInputContent("");
       setImagePreviews([]);
+      // Reset time to current time after submission
+      const now = new Date();
+      const hours = String(now.getHours()).padStart(2, "0");
+      const minutes = String(now.getMinutes()).padStart(2, "0");
+      setEntryTime(`${hours}:${minutes}`);
       if (textareaRef.current) {
         textareaRef.current.style.height = "auto";
         textareaRef.current.style.overflowY = "hidden";
@@ -363,8 +387,9 @@ export default function App() {
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
       const scrollHeight = textareaRef.current.scrollHeight;
+      const minHeight = 80; // min-h-[80px] equivalent
       const maxHeight = 200; // max-h-[200px] equivalent
-      textareaRef.current.style.height = `${Math.min(scrollHeight, maxHeight)}px`;
+      textareaRef.current.style.height = `${Math.max(minHeight, Math.min(scrollHeight, maxHeight))}px`;
       textareaRef.current.style.overflowY =
         scrollHeight > maxHeight ? "auto" : "hidden";
     }
@@ -604,7 +629,8 @@ export default function App() {
                           );
                         }
                         const isSelected = selectedDate.date === dayData.date;
-                        const isTodayDate = dayData.date === formatDate(new Date());
+                        const isTodayDate =
+                          dayData.date === formatDate(new Date());
                         const formattedDate = formatDateForTooltip(
                           dayData.date
                         );
@@ -791,18 +817,40 @@ export default function App() {
                           )}
                           {editingIndex === idx ? (
                             <div className="space-y-2">
+                              <div className="flex items-center gap-2 mb-2">
+                                <label className="text-xs text-slate-400 flex items-center gap-1.5">
+                                  <Clock size={12} />
+                                  Time:
+                                </label>
+                                <input
+                                  type="time"
+                                  value={editingTime}
+                                  onChange={(e) =>
+                                    setEditingTime(e.target.value)
+                                  }
+                                  className="bg-slate-800/60 border border-slate-700/50 rounded-lg px-3 py-1.5 text-slate-200 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500/50 cursor-pointer hover:bg-slate-800/80 transition-colors"
+                                  onClick={(e) => e.stopPropagation()}
+                                  title="Edit entry time"
+                                />
+                              </div>
                               <textarea
                                 ref={editTextareaRef}
                                 value={editingContent}
-                                onChange={(e) => setEditingContent(e.target.value)}
+                                onChange={(e) =>
+                                  setEditingContent(e.target.value)
+                                }
                                 onKeyDown={(e) => {
                                   if (e.key === "Escape") {
                                     setEditingIndex(null);
                                     setEditingContent("");
+                                    setEditingTime("");
                                   }
                                 }}
                                 className="w-full bg-slate-800/50 border border-slate-700 rounded-lg p-3 text-slate-200 text-sm leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-                                rows={Math.min(editingContent.split("\n").length + 2, 15)}
+                                rows={Math.min(
+                                  editingContent.split("\n").length + 2,
+                                  15
+                                )}
                                 onClick={(e) => e.stopPropagation()}
                                 autoFocus
                               />
@@ -810,18 +858,24 @@ export default function App() {
                                 <button
                                   onClick={async (e) => {
                                     e.stopPropagation();
-                                    if (!userId || !editingContent.trim()) return;
+                                    if (!userId || !editingContent.trim())
+                                      return;
                                     try {
                                       await editEntryMutation({
                                         userId,
                                         date: selectedDate.date,
                                         entryIndex: idx,
                                         newContent: editingContent.trim(),
+                                        newTime: editingTime || undefined,
                                       });
                                       setEditingIndex(null);
                                       setEditingContent("");
+                                      setEditingTime("");
                                     } catch (error) {
-                                      console.error("Error editing entry:", error);
+                                      console.error(
+                                        "Error editing entry:",
+                                        error
+                                      );
                                     }
                                   }}
                                   className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs rounded-lg transition-colors flex items-center gap-1.5"
@@ -835,6 +889,7 @@ export default function App() {
                                     e.stopPropagation();
                                     setEditingIndex(null);
                                     setEditingContent("");
+                                    setEditingTime("");
                                   }}
                                   className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs rounded-lg transition-colors flex items-center gap-1.5"
                                 >
@@ -891,6 +946,61 @@ export default function App() {
                                 e.stopPropagation();
                                 setEditingIndex(idx);
                                 setEditingContent(content);
+                                // Convert 12-hour format (09:45 PM) to 24-hour format (21:45) for time input
+                                if (time) {
+                                  try {
+                                    // Parse the time string (e.g., "09:45 PM" or "9:45 AM")
+                                    const timeStr = time.trim();
+                                    // Match time pattern with optional space before AM/PM
+                                    const timeMatch = timeStr.match(
+                                      /(\d{1,2}):(\d{2})\s*(AM|PM)/i
+                                    );
+                                    if (timeMatch) {
+                                      let hours = parseInt(timeMatch[1], 10);
+                                      const minutes = parseInt(
+                                        timeMatch[2],
+                                        10
+                                      );
+                                      const period = timeMatch[3].toUpperCase();
+
+                                      if (period === "PM" && hours !== 12) {
+                                        hours += 12;
+                                      } else if (
+                                        period === "AM" &&
+                                        hours === 12
+                                      ) {
+                                        hours = 0;
+                                      }
+                                      setEditingTime(
+                                        `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`
+                                      );
+                                    } else {
+                                      // If format doesn't match, try to parse as 24-hour format
+                                      const [h, m] = timeStr
+                                        .split(":")
+                                        .map(Number);
+                                      if (!isNaN(h) && !isNaN(m)) {
+                                        setEditingTime(
+                                          `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`
+                                        );
+                                      } else {
+                                        throw new Error("Invalid time format");
+                                      }
+                                    }
+                                  } catch {
+                                    // If parsing fails, use current time
+                                    const now = new Date();
+                                    setEditingTime(
+                                      `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`
+                                    );
+                                  }
+                                } else {
+                                  // If no time, use current time
+                                  const now = new Date();
+                                  setEditingTime(
+                                    `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`
+                                  );
+                                }
                                 setTimeout(() => {
                                   editTextareaRef.current?.focus();
                                 }, 0);
@@ -949,71 +1059,100 @@ export default function App() {
 
       <div className="fixed bottom-0 left-0 right-0 z-40 pb-6 px-4">
         <div className="max-w-3xl mx-auto">
-          {imagePreviews.length > 0 && (
-            <div className="mb-3 flex gap-2 overflow-x-auto scrollbar-hide pb-2">
-              {imagePreviews.map((preview, idx) => (
-                <div key={idx} className="relative flex-shrink-0">
-                  <img
-                    src={preview.preview}
-                    alt={`Preview ${idx + 1}`}
-                    className="w-16 h-16 object-cover rounded-lg border border-slate-700/50"
+          <div className="relative group bg-slate-900/80 backdrop-blur-xl rounded-2xl border border-slate-700/50 focus-within:border-slate-600/60 shadow-xl transition-all duration-200">
+            {/* Attachments Section */}
+            {imagePreviews.length > 0 && (
+              <div className="px-4 pt-4 pb-3 border-b border-slate-700/40">
+                <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+                  {imagePreviews.map((preview, idx) => {
+                    const fileName =
+                      preview.file.name || `image-${idx + 1}.png`;
+                    return (
+                      <div
+                        key={idx}
+                        className="flex-shrink-0 flex items-center gap-2 bg-slate-800/60 border border-slate-700/50 rounded-lg px-3 py-2 min-w-[140px]"
+                      >
+                        <Square
+                          size={14}
+                          className="text-slate-400 flex-shrink-0"
+                        />
+                        <span className="text-slate-300 text-xs font-medium truncate flex-1">
+                          {fileName}
+                        </span>
+                        <button
+                          onClick={() => removeImagePreview(idx)}
+                          className="text-slate-400 hover:text-slate-200 transition-colors flex-shrink-0"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Content Input Section */}
+            <div className="p-4">
+              <div className="flex items-end gap-3">
+                <div className="flex-1 min-w-0">
+                  <textarea
+                    ref={textareaRef}
+                    value={inputContent}
+                    onChange={(e) => setInputContent(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    onPaste={handlePaste}
+                    placeholder="Write the Entery content"
+                    className="w-full bg-transparent text-slate-100 placeholder-slate-500 text-sm leading-relaxed outline-none resize-none min-h-[80px]"
+                    rows={1}
+                  />
+                </div>
+
+                <div className="flex items-end gap-2 flex-shrink-0 pb-1">
+                  {/* Time Input */}
+                  <div className="flex flex-col items-end gap-1">
+                    <input
+                      type="time"
+                      value={entryTime}
+                      onChange={(e) => setEntryTime(e.target.value)}
+                      className="bg-slate-800/60 h-10 border border-slate-700/50 rounded-lg px-3 py-1.5 text-slate-200 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500/50 cursor-pointer hover:bg-slate-800/80 transition-colors"
+                      title="Time when the post was published on LinkedIn"
+                    />
+                  </div>
+
+                  {/* Image Upload Button */}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleFileSelect}
+                    className="hidden"
                   />
                   <button
-                    onClick={() => removeImagePreview(idx)}
-                    className="absolute -top-1.5 -right-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-full p-0.5 border border-slate-700 transition-colors"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="p-2.5 rounded-lg bg-slate-800/60 border border-slate-700/50 text-slate-300 hover:text-slate-100 hover:bg-slate-800/80 hover:border-slate-600/50 transition-all duration-200 flex items-center justify-center"
+                    title="Upload images"
                   >
-                    <X size={10} />
+                    <ImageIcon size={18} />
+                  </button>
+
+                  {/* Send Button */}
+                  <button
+                    onClick={handleSubmit}
+                    disabled={
+                      (!inputContent.trim() && imagePreviews.length === 0) ||
+                      isUploading
+                    }
+                    className="p-2.5 rounded-lg bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center disabled:hover:bg-blue-600"
+                  >
+                    {isUploading ? (
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    ) : (
+                      <Send size={18} />
+                    )}
                   </button>
                 </div>
-              ))}
-            </div>
-          )}
-
-          <div className="relative group bg-slate-800/60 backdrop-blur-xl rounded-2xl border border-slate-700/40 focus-within:border-slate-600/60 shadow-xl transition-all duration-200">
-            <div className="flex items-end gap-2 p-3">
-              <div className="flex-1 min-w-0">
-                <textarea
-                  ref={textareaRef}
-                  value={inputContent}
-                  onChange={(e) => setInputContent(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  onPaste={handlePaste}
-                  placeholder={`Write an entry for ${isToday ? "Today" : selectedDate.obj.toLocaleDateString("en-US", { month: "short", day: "numeric" })}...`}
-                  className="w-full bg-transparent text-slate-100 placeholder-slate-500 text-sm leading-relaxed outline-none resize-none"
-                  rows={1}
-                />
-              </div>
-
-              <div className="flex items-center gap-1.5 flex-shrink-0">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handleFileSelect}
-                  className="hidden"
-                />
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="p-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-700/50 transition-all duration-200 flex items-center justify-center"
-                  title="Upload images"
-                >
-                  <ImageIcon size={18} />
-                </button>
-                <button
-                  onClick={handleSubmit}
-                  disabled={
-                    (!inputContent.trim() && imagePreviews.length === 0) ||
-                    isUploading
-                  }
-                  className="p-2 rounded-lg bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center disabled:hover:bg-blue-600"
-                >
-                  {isUploading ? (
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  ) : (
-                    <Send size={18} />
-                  )}
-                </button>
               </div>
             </div>
           </div>

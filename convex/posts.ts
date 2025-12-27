@@ -143,6 +143,7 @@ export const editEntry = mutation({
     date: v.string(),
     entryIndex: v.number(),
     newContent: v.string(),
+    newTime: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const existing = await ctx.db
@@ -160,14 +161,27 @@ export const editEntry = mutation({
     
     if (args.entryIndex < 0 || args.entryIndex >= entries.length) return;
 
-    // Extract timestamp from the original entry
-    const originalEntry = entries[args.entryIndex];
-    const match = originalEntry.match(/^\[(.*?)\]\s(.*)/s);
-    const time = match ? match[1] : null;
+    // Use newTime if provided, otherwise preserve original timestamp
+    let timeToUse: string | null = null;
+    if (args.newTime) {
+      // Convert 24-hour format (HH:MM) to 12-hour format with AM/PM
+      const [hours, minutes] = args.newTime.split(":").map(Number);
+      const date = new Date();
+      date.setHours(hours, minutes, 0, 0);
+      timeToUse = date.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } else {
+      // Extract timestamp from the original entry
+      const originalEntry = entries[args.entryIndex];
+      const match = originalEntry.match(/^\[(.*?)\]\s(.*)/s);
+      timeToUse = match ? match[1] : null;
+    }
     
-    // Preserve timestamp, update content
-    const updatedEntry = time 
-      ? `[${time}] ${args.newContent.trim()}`
+    // Use new time if provided, otherwise preserve original
+    const updatedEntry = timeToUse 
+      ? `[${timeToUse}] ${args.newContent.trim()}`
       : args.newContent.trim();
     
     entries[args.entryIndex] = updatedEntry;
