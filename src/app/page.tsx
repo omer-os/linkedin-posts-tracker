@@ -477,7 +477,7 @@ export default function App() {
           currentStreak={stats.currentStreak}
         />
 
-        <main className="w-max overflow-x-hidden mx-auto px-4 py-8 space-y-8 flex-1 overflow-y-auto">
+        <main className="max-w-3xl overflow-x-hidden mx-auto px-4 py-8 space-y-8 flex-1 overflow-y-auto">
           <ActivityGraph
             weeks={weeks}
             currentYear={currentYear}
