@@ -12,5 +12,13 @@ export default defineSchema({
   })
     .index("by_user", ["userId"])
     .index("by_user_date", ["userId", "date"]),
+  drafts: defineTable({
+    userId: v.string(),
+    text: v.string(),
+    isPosted: v.boolean(),
+    createdAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_posted", ["userId", "isPosted"]),
 });
 
