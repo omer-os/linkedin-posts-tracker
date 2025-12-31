@@ -3,6 +3,7 @@
 import React, { useRef, useEffect } from "react";
 import { Clock, Edit, Copy, Trash2, CheckSquare, Square, Check, X, Image as ImageIcon } from "lucide-react";
 import { TimePicker } from "./time-picker";
+import { containsArabic } from "../lib/utils";
 
 interface EntryCardProps {
   entry: string;
@@ -98,6 +99,8 @@ export function EntryCard({
     return `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
   };
 
+  const isArabic = containsArabic(content);
+  
   return (
     <div
       className={`group relative ${
@@ -159,6 +162,7 @@ export function EntryCard({
                   )}
                   onClick={(e) => e.stopPropagation()}
                   autoFocus
+                  dir={containsArabic(editingContent) ? "rtl" : "ltr"}
                 />
                 <div className="flex items-center gap-2">
                   <button
@@ -186,7 +190,10 @@ export function EntryCard({
               </div>
             ) : (
               <>
-                <p className="text-slate-200 text-sm whitespace-pre-wrap leading-relaxed">
+                <p 
+                  className="text-slate-200 text-sm whitespace-pre-wrap leading-relaxed"
+                  dir={isArabic ? "rtl" : "ltr"}
+                >
                   {content}
                 </p>
                 {isLastEntry &&

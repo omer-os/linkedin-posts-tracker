@@ -5,6 +5,7 @@ import { Plus, Check, Trash2, Lightbulb, X } from "lucide-react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
+import { containsArabic } from "../lib/utils";
 
 interface DraftsSidebarProps {
   userId: string;
@@ -103,6 +104,7 @@ export function DraftsSidebar({ userId }: DraftsSidebarProps) {
                     ? "text-slate-400 line-through"
                     : "text-slate-200"
                 }`}
+                dir={containsArabic(draft.text) ? "rtl" : "ltr"}
               >
                 {draft.text}
               </p>
@@ -155,6 +157,7 @@ export function DraftsSidebar({ userId }: DraftsSidebarProps) {
                 placeholder="Enter draft idea..."
                 autoFocus
                 className="flex-1 bg-slate-800/60 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder:text-slate-500/50 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-all"
+                dir={containsArabic(newDraftText) ? "rtl" : "ltr"}
               />
               <button
                 onClick={() => {

@@ -3,6 +3,7 @@
 import React, { useRef, useEffect } from "react";
 import { Send, Image as ImageIcon, X } from "lucide-react";
 import { TimePicker } from "./time-picker";
+import { containsArabic } from "../lib/utils";
 
 interface PostInputFormProps {
   inputContent: string;
@@ -103,6 +104,7 @@ export function PostInputForm({
                   placeholder="Write your entry content..."
                   className="w-full bg-transparent text-slate-100 placeholder-slate-500/70 text-[15px] leading-[1.6] outline-none resize-none min-h-[52px] max-h-[200px]"
                   rows={1}
+                  dir={containsArabic(inputContent) ? "rtl" : "ltr"}
                 />
               </div>
 

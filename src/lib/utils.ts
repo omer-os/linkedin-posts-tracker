@@ -46,9 +46,23 @@ export const formatDateForTooltip = (dateStr: string): string => {
   return `${weekday}, ${monthName} ${dayNum}, ${yearNum}`;
 };
 
+export const containsArabic = (text: string): boolean => {
+  // Arabic Unicode range: U+0600 to U+06FF
+  const arabicRegex = /[\u0600-\u06FF]/;
+  return arabicRegex.test(text);
+};
+
 export const splitEntries = (content: string): string[] => {
-  // Split by double newline followed by timestamp pattern [HH:MM]
+  // Split by double newline followed by timestamp pattern [HH:MM AM/PM]
   // This ensures entries with \n\n in their content don't get split incorrectly
-  const entryPattern = /\n\n(?=\[\d{2}:\d{2}(?::\d{2})?\])/;
-  return content.split(entryPattern).filter((entry) => entry.trim().length > 0);
+  // Match both 12-hour format [HH:MM AM/PM] and 24-hour format [HH:MM] for backward compatibility
+  const entryPattern = /\n\n(?=\[\d{1,2}:\d{2}(?:\s*(?:AM|PM))?\])/i;
+  const entries = content.split(entryPattern).filter((entry) => entry.trim().length > 0);
+  
+  // If no entries were split but content exists, treat the whole content as one entry
+  if (entries.length === 0 && content.trim().length > 0) {
+    return [content.trim()];
+  }
+  
+  return entries;
 };

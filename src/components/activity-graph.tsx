@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Calendar, ChevronDown } from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import { DayData } from "../lib/types";
 import { formatDate, formatDateForTooltip, getIntensityClass, getMonthName } from "../lib/utils";
 
@@ -25,28 +25,42 @@ export function ActivityGraph({
   todayButtonRef,
 }: ActivityGraphProps) {
   return (
-    <section className="bg-slate-900/40 rounded-3xl border border-slate-800/50 p-6 shadow-2xl backdrop-blur-sm w-full">
+    <section className="bg-slate-900/40 rounded-3xl border border-slate-800/50 p-6 shadow-2xl backdrop-blur-sm w-full" dir="ltr">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">
           <Calendar size={14} />
           Activity Graph
         </h2>
-        <div className="relative group">
-          <select
-            value={currentYear}
-            onChange={(e) => onYearChange(Number(e.target.value))}
-            className="appearance-none bg-slate-950 border border-slate-700 text-slate-200 text-xs font-medium py-1.5 pl-3 pr-8 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500/50 cursor-pointer hover:bg-slate-800 transition-colors shadow-sm"
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              const currentIndex = availableYears.indexOf(currentYear);
+              if (currentIndex > 0) {
+                onYearChange(availableYears[currentIndex - 1]);
+              }
+            }}
+            disabled={availableYears.indexOf(currentYear) === 0}
+            className="p-1.5 bg-slate-950 border border-slate-700 text-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500/50 cursor-pointer hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-slate-950"
+            title="Previous year"
           >
-            {availableYears.map((year) => (
-              <option key={year} value={year}>
-                {year}
-              </option>
-            ))}
-          </select>
-          <ChevronDown
-            size={12}
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none group-hover:text-slate-200 transition-colors"
-          />
+            <ChevronLeft size={14} />
+          </button>
+          <span className="text-slate-200 text-xs font-medium px-2 min-w-[50px] text-center">
+            {currentYear}
+          </span>
+          <button
+            onClick={() => {
+              const currentIndex = availableYears.indexOf(currentYear);
+              if (currentIndex < availableYears.length - 1) {
+                onYearChange(availableYears[currentIndex + 1]);
+              }
+            }}
+            disabled={availableYears.indexOf(currentYear) === availableYears.length - 1}
+            className="p-1.5 bg-slate-950 border border-slate-700 text-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500/50 cursor-pointer hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-slate-950"
+            title="Next year"
+          >
+            <ChevronRight size={14} />
+          </button>
         </div>
       </div>
 

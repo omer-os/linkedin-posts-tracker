@@ -108,9 +108,10 @@ export const deleteEntries = mutation({
 
     if (!existing) return;
 
-    // Split by double newline followed by timestamp pattern [HH:MM]
+    // Split by double newline followed by timestamp pattern [HH:MM AM/PM]
     // This ensures entries with \n\n in their content don't get split incorrectly
-    const entryPattern = /\n\n(?=\[\d{2}:\d{2}(?::\d{2})?\])/;
+    // Match both 12-hour format [HH:MM AM/PM] and 24-hour format [HH:MM] for backward compatibility
+    const entryPattern = /\n\n(?=\[\d{1,2}:\d{2}(?:\s*(?:AM|PM))?\])/i;
     const entries = existing.content.split(entryPattern).filter((entry) => entry.trim().length > 0);
     const sortedIndices = [...args.entryIndices].sort((a, b) => b - a);
     
@@ -155,8 +156,9 @@ export const editEntry = mutation({
 
     if (!existing) return;
 
-    // Split by double newline followed by timestamp pattern [HH:MM]
-    const entryPattern = /\n\n(?=\[\d{2}:\d{2}(?::\d{2})?\])/;
+    // Split by double newline followed by timestamp pattern [HH:MM AM/PM]
+    // Match both 12-hour format [HH:MM AM/PM] and 24-hour format [HH:MM] for backward compatibility
+    const entryPattern = /\n\n(?=\[\d{1,2}:\d{2}(?:\s*(?:AM|PM))?\])/i;
     const entries = existing.content.split(entryPattern).filter((entry) => entry.trim().length > 0);
     
     if (args.entryIndex < 0 || args.entryIndex >= entries.length) return;
